@@ -37,7 +37,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'leaf' : 'leaf-outline'}
               size={22}
-              color={color}
+              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
             />
           ),
         }}
@@ -50,7 +50,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'grid' : 'grid-outline'}
               size={22}
-              color={color}
+              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
             />
           ),
         }}
@@ -64,7 +64,7 @@ export default function TabsLayout() {
               <Ionicons
                 name={focused ? 'bag-handle' : 'bag-handle-outline'}
                 size={22}
-                color={color}
+                color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
               />
               {cartCount > 0 && (
                 <View style={styles.badge}>
@@ -85,7 +85,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'person-circle' : 'person-circle-outline'}
               size={24}
-              color={color}
+              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
             />
           ),
         }}
