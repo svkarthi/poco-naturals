@@ -20,10 +20,25 @@ export interface StoreCategory {
   permalink: string;
 }
 
+export interface ProductVariationAttribute {
+  name: string;
+  value: string;
+}
+
+export interface ProductVariation {
+  id: number;
+  label: string;
+  attributes: ProductVariationAttribute[];
+  price?: number;
+  regularPrice?: number;
+  isInStock?: boolean;
+}
+
 export interface StoreProduct {
   id: number;
   name: string;
   slug: string;
+  type?: string;
   permalink: string;
   sku: string;
   shortDescription: string;
@@ -35,14 +50,20 @@ export interface StoreProduct {
   currencySymbol: string;
   images: ProductImage[];
   categories: ProductCategoryRef[];
+  variations?: ProductVariation[];
   isInStock: boolean;
   averageRating: number;
   reviewCount: number;
 }
 
 export interface CartItem {
+  cartKey: string;       // `${productId}:${variationId ?? 0}`
   product: StoreProduct;
   quantity: number;
+  variationId?: number;
+  variationLabel?: string;
+  unitPrice: number;
+  unitRegularPrice: number;
 }
 
 export interface BlogPost {
@@ -57,3 +78,7 @@ export interface BlogPost {
 }
 
 export type SortOption = 'featured' | 'price_asc' | 'price_desc' | 'discount';
+
+export function makeCartKey(productId: number, variationId?: number): string {
+  return `${productId}:${variationId ?? 0}`;
+}

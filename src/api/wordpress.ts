@@ -11,7 +11,7 @@ interface RawWpPost {
   excerpt?: { rendered?: string };
   content?: { rendered?: string };
   _embedded?: {
-    'wp:featuredmedia'?: Array<{ source_url?: string }>;
+    'wp:featuredmedia'?: { source_url?: string }[];
   };
 }
 

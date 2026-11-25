@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { useStore } from '@/context/StoreContext';
+import { useCart } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 import { formatInr } from '@/utils/format';
 
@@ -27,7 +27,7 @@ export default function CartScreen() {
     updateQuantity,
     removeFromCart,
     clearCart,
-  } = useStore();
+  } = useCart();
 
   const remainingForFreeShipping = Math.max(
     0,
@@ -39,12 +39,14 @@ export default function CartScreen() {
   );
 
   const handleWhatsAppOrder = () => {
-    const lines = cartItems.map(
-      (item) =>
-        `• ${item.product.name} × ${item.quantity} (${formatInr(
-          item.product.price * item.quantity
-        )})`
-    );
+    const lines = cartItems.map((item) => {
+      const variantSuffix = item.variationLabel
+        ? ` (${item.variationLabel})`
+        : '';
+      return `• ${item.product.name}${variantSuffix} × ${item.quantity} (${formatInr(
+        item.unitPrice * item.quantity
+      )})`;
+    });
     const message = [
       `Hello POCO Naturals! I'd like to place an order:`,
       '',
@@ -133,77 +135,95 @@ export default function CartScreen() {
 
         {/* Cart Items */}
         <View style={styles.itemsList}>
-          {cartItems.map(({ product, quantity }) => (
-            <View key={product.id} style={styles.itemCard}>
-              <Pressable
-                onPress={() => router.push(`/product/${product.id}`)}
-                style={styles.thumbWrap}
-              >
-                {product.images[0]?.src ? (
-                  <Image
-                    source={{ uri: product.images[0].src }}
-                    style={styles.thumb}
-                    contentFit="cover"
-                  />
-                ) : (
-                  <Ionicons name="leaf-outline" size={24} color={COLORS.primary} />
-                )}
-              </Pressable>
+          {cartItems.map((item) => {
+            const {
+              cartKey,
+              product,
+              quantity,
+              variationLabel,
+              unitPrice,
+              unitRegularPrice,
+            } = item;
 
-              <View style={styles.itemInfo}>
-                <View style={styles.itemTopRow}>
-                  <Pressable
-                    onPress={() => router.push(`/product/${product.id}`)}
-                    style={{ flex: 1 }}
-                  >
-                    <Text style={styles.itemName} numberOfLines={2}>
-                      {product.name}
-                    </Text>
-                  </Pressable>
-                  <Pressable
-                    onPress={() => removeFromCart(product.id)}
-                    hitSlop={8}
-                    accessibilityLabel="Remove item"
-                  >
-                    <Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color={COLORS.textMuted}
+            return (
+              <View key={cartKey} style={styles.itemCard}>
+                <Pressable
+                  onPress={() => router.push(`/product/${product.id}`)}
+                  style={styles.thumbWrap}
+                >
+                  {product.images[0]?.src ? (
+                    <Image
+                      source={{ uri: product.images[0].src }}
+                      style={styles.thumb}
+                      contentFit="cover"
                     />
-                  </Pressable>
-                </View>
+                  ) : (
+                    <Ionicons
+                      name="leaf-outline"
+                      size={24}
+                      color={COLORS.primary}
+                    />
+                  )}
+                </Pressable>
 
-                <View style={styles.itemBottomRow}>
-                  <View>
-                    <Text style={styles.itemPrice}>
-                      {formatInr(product.price * quantity)}
-                    </Text>
-                    {product.regularPrice > product.price && (
-                      <Text style={styles.itemMrp}>
-                        {formatInr(product.regularPrice * quantity)}
+                <View style={styles.itemInfo}>
+                  <View style={styles.itemTopRow}>
+                    <Pressable
+                      onPress={() => router.push(`/product/${product.id}`)}
+                      style={{ flex: 1 }}
+                    >
+                      <Text style={styles.itemName} numberOfLines={2}>
+                        {product.name}
                       </Text>
-                    )}
+                      {variationLabel ? (
+                        <Text style={styles.variantTag}>{variationLabel}</Text>
+                      ) : null}
+                    </Pressable>
+                    <Pressable
+                      onPress={() => removeFromCart(cartKey)}
+                      hitSlop={8}
+                      accessibilityLabel="Remove item"
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color={COLORS.textMuted}
+                      />
+                    </Pressable>
                   </View>
 
-                  <View style={styles.stepper}>
-                    <Pressable
-                      onPress={() => updateQuantity(product.id, quantity - 1)}
-                      style={styles.stepBtn}
-                    >
-                      <Ionicons name="remove" size={16} color={COLORS.primary} />
-                    </Pressable>
-                    <Text style={styles.stepQty}>{quantity}</Text>
-                    <Pressable
-                      onPress={() => updateQuantity(product.id, quantity + 1)}
-                      style={styles.stepBtn}
-                    >
-                      <Ionicons name="add" size={16} color={COLORS.primary} />
-                    </Pressable>
+                  <View style={styles.itemBottomRow}>
+                    <View>
+                      <Text style={styles.itemPrice}>
+                        {formatInr(unitPrice * quantity)}
+                      </Text>
+                      {unitRegularPrice > unitPrice && (
+                        <Text style={styles.itemMrp}>
+                          {formatInr(unitRegularPrice * quantity)}
+                        </Text>
+                      )}
+                    </View>
+
+                    <View style={styles.stepper}>
+                      <Pressable
+                        onPress={() => updateQuantity(cartKey, quantity - 1)}
+                        style={styles.stepBtn}
+                      >
+                        <Ionicons name="remove" size={16} color={COLORS.primary} />
+                      </Pressable>
+                      <Text style={styles.stepQty}>{quantity}</Text>
+                      <Pressable
+                        onPress={() => updateQuantity(cartKey, quantity + 1)}
+                        style={styles.stepBtn}
+                      >
+                        <Ionicons name="add" size={16} color={COLORS.primary} />
+                      </Pressable>
+                    </View>
                   </View>
                 </View>
               </View>
-            </View>
-          ))}
+            );
+          })}
         </View>
 
         {/* Bill Summary */}
@@ -320,13 +340,13 @@ const styles = StyleSheet.create({
   shippingText: {
     fontSize: 13,
     fontWeight: '600',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     flex: 1,
   },
   progressTrack: {
     height: 6,
     borderRadius: RADIUS.pill,
-    backgroundColor: '#D3E5D9',
+    backgroundColor: COLORS.borderStrong,
     overflow: 'hidden',
   },
   progressFill: {
@@ -375,6 +395,12 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     lineHeight: 19,
   },
+  variantTag: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: COLORS.primary,
+    marginTop: 2,
+  },
   itemBottomRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -408,7 +434,7 @@ const styles = StyleSheet.create({
   stepQty: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     minWidth: 16,
     textAlign: 'center',
   },
@@ -480,14 +506,14 @@ const styles = StyleSheet.create({
   },
   checkoutBtnSub: {
     fontSize: 11,
-    color: '#D5E5DB',
+    color: '#E6F0E4',
     marginTop: 2,
   },
   checkoutPricePill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.18)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: RADIUS.pill,

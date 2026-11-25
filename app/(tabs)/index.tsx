@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
@@ -14,8 +14,9 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CategoryTile } from '@/components/CategoryTile';
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { ProductCard } from '@/components/ProductCard';
-import { useStore } from '@/context/StoreContext';
+import { useCart, useCatalog } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 
 const BRAND_LOGO = require('../../assets/logo.png');
@@ -28,8 +29,8 @@ export default function HomeScreen() {
     isLoadingCatalog,
     isLiveData,
     refreshCatalog,
-    cartCount,
-  } = useStore();
+  } = useCatalog();
+  const { cartCount } = useCart();
 
   // Match the exact Featured Products highlighted on poconaturals.in
   const featuredProducts = useMemo(() => {
@@ -41,9 +42,7 @@ export default function HomeScreen() {
   }, [products]);
 
   const pairedProducts = useMemo(() => {
-    const rows: Array<
-      [(typeof products)[number], (typeof products)[number] | undefined]
-    > = [];
+    const rows: [(typeof products)[number], (typeof products)[number] | undefined][] = [];
     for (let i = 0; i < products.length; i += 2) {
       rows.push([products[i], products[i + 1]]);
     }
@@ -103,6 +102,8 @@ export default function HomeScreen() {
             Search millets, karupatti, coconut oil, honey...
           </Text>
         </Pressable>
+
+        <OfflineBanner />
 
         {/* Hero Section matching poconaturals.in */}
         <View style={styles.heroCard}>

@@ -26,7 +26,8 @@ export function htmlToPlainText(html: string): string {
   if (!html) return '';
   const withBreaks = html
     .replace(/<li[^>]*>/gi, '\n• ')
-    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<\/li>/gi, '')
+    .replace(/<\/(p|div|h[1-6]|ul|ol|tr)>/gi, '\n\n')
     .replace(/<br\s*\/?>/gi, '\n');
   const stripped = withBreaks.replace(/<[^>]+>/g, '');
   return decodeHtmlEntities(stripped)

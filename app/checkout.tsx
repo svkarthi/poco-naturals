@@ -1,9 +1,10 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Stack, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Linking,
   Platform,
   Pressable,
@@ -12,30 +13,42 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView, type WebViewMessageEvent, type WebViewNavigation } from 'react-native-webview';
+import {
+  WebView,
+  type WebViewMessageEvent,
+  type WebViewNavigation,
+  type WebViewProps,
+} from 'react-native-webview';
 
-import { useStore } from '@/context/StoreContext';
+import { useCart } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
+import { resolveExternalCheckoutUrl } from '@/utils/deepLinks';
 import { formatInr } from '@/utils/format';
+
+type ShouldStartRequest = Parameters<
+  NonNullable<WebViewProps['onShouldStartLoadWithRequest']>
+>[0];
 
 export default function CheckoutScreen() {
   const router = useRouter();
-  const { cartItems, subtotal, clearCart } = useStore();
-  const hasSyncedRef = useRef(false);
+  const { cartItems, subtotal, clearCart } = useCart();
+  const [hasSynced, setHasSynced] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const [syncState, setSyncState] = useState<'syncing' | 'ready' | 'completed' | 'error'>(
-    'syncing'
-  );
+  const [syncState, setSyncState] = useState<
+    'syncing' | 'ready' | 'completed' | 'error'
+  >('syncing');
   const [statusMessage, setStatusMessage] = useState(
     'Syncing your basket with poconaturals.in...'
   );
 
-  // Build an injected JS script that runs inside the poconaturals.in WebView session
-  // to sync the native cart items via WooCommerce's Store API before redirecting to /checkout/.
+  // Build an injected JS script that runs ONLY on /cart/ inside the WebView session,
+  // syncs the native cart via WooCommerce's Store API (batch endpoint with sequential
+  // fallback), and navigates to /checkout/.
   const syncScript = useMemo(() => {
     const payload = JSON.stringify(
       cartItems.map((item) => ({
-        id: item.product.id,
+        id: item.variationId ?? item.product.id,
         quantity: item.quantity,
       }))
     );
@@ -43,98 +56,163 @@ export default function CheckoutScreen() {
     return `
       (async function syncPocoCart() {
         try {
+          var cleanPath = (window.location.pathname || '').replace(/\\/+$/, '');
+          if (cleanPath !== '/cart') {
+            return;
+          }
           if (window.__POCO_SYNCED__) return;
           window.__POCO_SYNCED__ = true;
-          const items = ${payload};
+
+          var items = ${payload};
           if (!items.length) {
             window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'READY' }));
             return;
           }
 
-          const cartRes = await fetch('/wp-json/wc/store/v1/cart', { credentials: 'include' });
-          const nonce = cartRes.headers.get('Nonce') || cartRes.headers.get('X-WC-Store-API-Nonce') || '';
-          const existing = await cartRes.json();
+          var cartRes = await fetch('/wp-json/wc/store/v1/cart', { credentials: 'include' });
+          var nonce = cartRes.headers.get('Nonce') || cartRes.headers.get('X-WC-Store-API-Nonce') || '';
+          var existing = await cartRes.json();
+          var oldItems = (existing && Array.isArray(existing.items)) ? existing.items : [];
 
-          // Clear stale web cart items so checkout matches the native cart exactly
-          if (existing && Array.isArray(existing.items) && existing.items.length > 0) {
-            for (const oldItem of existing.items) {
-              await fetch('/wp-json/wc/store/v1/cart/remove-item', {
+          var batchRequests = [];
+          for (var i = 0; i < oldItems.length; i++) {
+            batchRequests.push({
+              path: '/wc/store/v1/cart/remove-item',
+              method: 'POST',
+              headers: { 'Nonce': nonce },
+              body: { key: oldItems[i].key }
+            });
+          }
+          for (var j = 0; j < items.length; j++) {
+            batchRequests.push({
+              path: '/wc/store/v1/cart/add-item',
+              method: 'POST',
+              headers: { 'Nonce': nonce },
+              body: { id: items[j].id, quantity: items[j].quantity }
+            });
+          }
+
+          var batchOk = false;
+          if (batchRequests.length > 0 && batchRequests.length <= 25) {
+            try {
+              var batchRes = await fetch('/wp-json/wc/store/v1/batch', {
                 method: 'POST',
                 credentials: 'include',
                 headers: {
                   'Content-Type': 'application/json',
-                  'Nonce': nonce,
+                  'Nonce': nonce
                 },
-                body: JSON.stringify({ key: oldItem.key }),
+                body: JSON.stringify({ requests: batchRequests })
+              });
+              batchOk = batchRes.ok;
+            } catch (_) {
+              batchOk = false;
+            }
+          }
+
+          if (!batchOk) {
+            for (var k = 0; k < oldItems.length; k++) {
+              await fetch('/wp-json/wc/store/v1/cart/remove-item', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'Nonce': nonce },
+                body: JSON.stringify({ key: oldItems[k].key })
+              });
+            }
+            for (var m = 0; m < items.length; m++) {
+              await fetch('/wp-json/wc/store/v1/cart/add-item', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json', 'Nonce': nonce },
+                body: JSON.stringify({ id: items[m].id, quantity: items[m].quantity })
               });
             }
           }
 
-          // Add every native cart item
-          for (const entry of items) {
-            await fetch('/wp-json/wc/store/v1/cart/add-item', {
-              method: 'POST',
-              credentials: 'include',
-              headers: {
-                'Content-Type': 'application/json',
-                'Nonce': nonce,
-              },
-              body: JSON.stringify({ id: entry.id, quantity: entry.quantity }),
-            });
-          }
-
           window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'SYNCED' }));
-          window.location.href = '${STORE_INFO.baseUrl}/checkout/';
+          window.location.replace('${STORE_INFO.baseUrl}/checkout/');
         } catch (err) {
           window.ReactNativeWebView.postMessage(
             JSON.stringify({ type: 'SYNC_ERROR', message: String(err) })
           );
-          window.location.href = '${STORE_INFO.baseUrl}/checkout/';
+          window.location.replace('${STORE_INFO.baseUrl}/checkout/');
         }
       })();
       true;
     `;
   }, [cartItems]);
 
-  const handleMessage = (event: WebViewMessageEvent) => {
+  const handleMessage = useCallback((event: WebViewMessageEvent) => {
     try {
       const data = JSON.parse(event.nativeEvent.data) as {
         type: string;
         message?: string;
       };
       if (data.type === 'SYNCED') {
-        hasSyncedRef.current = true;
+        setHasSynced(true);
         setStatusMessage('Loading secure checkout...');
-      } else if (data.type === 'READY') {
-        hasSyncedRef.current = true;
-        setSyncState('ready');
-      } else if (data.type === 'SYNC_ERROR') {
-        hasSyncedRef.current = true;
+      } else if (data.type === 'READY' || data.type === 'SYNC_ERROR') {
+        setHasSynced(true);
         setSyncState('ready');
       }
     } catch {
-      // Ignore non-JSON messages from payment gateways
+      // Ignore non-JSON messages emitted by third-party payment SDKs
     }
-  };
+  }, []);
 
-  const handleNavigationChange = (navState: WebViewNavigation) => {
-    const url = navState.url || '';
-    if (url.includes('/checkout/order-received/')) {
-      setSyncState('completed');
-      clearCart();
-      return;
-    }
-    if (url.includes('/checkout') && !navState.loading) {
-      setSyncState('ready');
-    }
-  };
+  const handleNavigationChange = useCallback(
+    (navState: WebViewNavigation) => {
+      const url = navState.url || '';
+      if (url.includes('/checkout/order-received/')) {
+        setSyncState('completed');
+        clearCart();
+        return;
+      }
+      if (url.includes('/checkout') && !navState.loading) {
+        setHasSynced(true);
+        setSyncState('ready');
+      }
+    },
+    [clearCart]
+  );
+
+  // Intercept UPI / GPay / PhonePe / Paytm / WhatsApp / tel / mailto deep links
+  const handleShouldStartLoad = useCallback(
+    (request: ShouldStartRequest): boolean => {
+      const resolution = resolveExternalCheckoutUrl(request.url);
+      if (!resolution.shouldIntercept || !resolution.targetUrl) {
+        return true;
+      }
+
+      const target = resolution.targetUrl;
+      const fallback = resolution.fallbackUrl;
+
+      Linking.openURL(target).catch(() => {
+        if (fallback && (fallback.startsWith('https://') || fallback.startsWith('http://'))) {
+          Linking.openURL(fallback).catch(() => {});
+        } else {
+          Alert.alert(
+            'Payment App Not Found',
+            'Could not open the selected UPI or payment app on this device. Please choose another payment method on the checkout page.'
+          );
+        }
+      });
+
+      return false;
+    },
+    []
+  );
 
   // Web preview fallback (react-native-webview is native iOS/Android only)
   if (Platform.OS === 'web') {
     const firstItem = cartItems[0];
-    const checkoutUrl = firstItem
-      ? `${STORE_INFO.baseUrl}/checkout/?add-to-cart=${firstItem.product.id}&quantity=${firstItem.quantity}`
-      : `${STORE_INFO.baseUrl}/checkout/`;
+    const targetProductId = firstItem
+      ? firstItem.variationId ?? firstItem.product.id
+      : undefined;
+    const checkoutUrl =
+      firstItem && targetProductId
+        ? `${STORE_INFO.baseUrl}/checkout/?add-to-cart=${targetProductId}&quantity=${firstItem.quantity}`
+        : `${STORE_INFO.baseUrl}/checkout/`;
 
     return (
       <SafeAreaView style={styles.webFallback}>
@@ -197,13 +275,16 @@ export default function CheckoutScreen() {
       )}
 
       <WebView
+        key={reloadKey}
         source={{ uri: `${STORE_INFO.baseUrl}/cart/` }}
+        originWhitelist={['*']}
+        onShouldStartLoadWithRequest={handleShouldStartLoad}
         onLoadEnd={() => {
-          if (hasSyncedRef.current && syncState === 'syncing') {
+          if (hasSynced && syncState === 'syncing') {
             setSyncState('ready');
           }
         }}
-        injectedJavaScript={!hasSyncedRef.current ? syncScript : undefined}
+        injectedJavaScript={!hasSynced ? syncScript : undefined}
         onMessage={handleMessage}
         onNavigationStateChange={handleNavigationChange}
         onError={() => setSyncState('error')}
@@ -211,6 +292,7 @@ export default function CheckoutScreen() {
         thirdPartyCookiesEnabled
         javaScriptEnabled
         domStorageEnabled
+        setSupportMultipleWindows={false}
         startInLoadingState
         style={styles.webview}
       />
@@ -237,10 +319,17 @@ export default function CheckoutScreen() {
               WhatsApp.
             </Text>
             <Pressable
-              onPress={() => router.back()}
+              onPress={() => {
+                setHasSynced(false);
+                setSyncState('syncing');
+                setReloadKey((k) => k + 1);
+              }}
               style={styles.webBtn}
             >
-              <Text style={styles.webBtnText}>Return to Cart</Text>
+              <Text style={styles.webBtnText}>Try Again</Text>
+            </Pressable>
+            <Pressable onPress={() => router.back()} style={styles.webSecondary}>
+              <Text style={styles.webSecondaryText}>Return to Cart</Text>
             </Pressable>
           </View>
         </View>

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useMemo } from 'react';
@@ -13,19 +13,19 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ProductCard } from '@/components/ProductCard';
-import { useStore } from '@/context/StoreContext';
+import { useCatalog, useWishlist } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 
 export default function AccountScreen() {
   const router = useRouter();
   const {
     products,
-    wishlistIds,
     isLiveData,
     lastSyncedAt,
     isLoadingCatalog,
     refreshCatalog,
-  } = useStore();
+  } = useCatalog();
+  const { wishlistIds } = useWishlist();
 
   const savedProducts = useMemo(
     () => products.filter((p) => wishlistIds.includes(p.id)),

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
@@ -32,8 +32,17 @@ export default function BlogScreen() {
   }, []);
 
   useEffect(() => {
-    loadPosts();
-  }, [loadPosts]);
+    let active = true;
+    fetchBlogPosts().then((data) => {
+      if (active) {
+        setPosts(data);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>

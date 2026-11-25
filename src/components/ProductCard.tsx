@@ -1,12 +1,12 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { useStore } from '@/context/StoreContext';
+import { useCart, useWishlist } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING } from '@/theme/tokens';
-import type { StoreProduct } from '@/types/store';
+import { makeCartKey, type StoreProduct } from '@/types/store';
 import { formatInr, getDiscountPercent } from '@/utils/format';
 
 interface ProductCardProps {
@@ -14,11 +14,13 @@ interface ProductCardProps {
   compact?: boolean;
 }
 
-export function ProductCard({ product, compact = false }: ProductCardProps) {
+function ProductCardInner({ product, compact = false }: ProductCardProps) {
   const router = useRouter();
-  const { addToCart, updateQuantity, getItemQuantity, isWishlisted, toggleWishlist } =
-    useStore();
+  const { addToCart, updateQuantity, getItemQuantity } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
+  const hasVariations =
+    Array.isArray(product.variations) && product.variations.length > 0;
   const quantity = getItemQuantity(product.id);
   const wishlisted = isWishlisted(product.id);
   const discount = getDiscountPercent(product.regularPrice, product.price);
@@ -80,6 +82,7 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
 
         <View style={styles.priceRow}>
           <Text style={styles.price}>
+            {hasVariations ? 'From ' : ''}
             {formatInr(product.price, product.currencySymbol)}
           </Text>
           {product.onSale && product.regularPrice > product.price && (
@@ -93,10 +96,24 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
           <View style={styles.outOfStockBtn}>
             <Text style={styles.outOfStockText}>Out of Stock</Text>
           </View>
+        ) : hasVariations ? (
+          <Pressable
+            onPress={() => router.push(`/product/${product.id}`)}
+            style={({ pressed }) => [
+              styles.addBtn,
+              pressed && styles.addBtnPressed,
+            ]}
+          >
+            <Text style={styles.addBtnText}>
+              {quantity > 0 ? `Options (${quantity})` : 'Choose Size'}
+            </Text>
+          </Pressable>
         ) : quantity > 0 ? (
           <View style={styles.stepper}>
             <Pressable
-              onPress={() => updateQuantity(product.id, quantity - 1)}
+              onPress={() =>
+                updateQuantity(makeCartKey(product.id), quantity - 1)
+              }
               style={styles.stepperBtn}
               hitSlop={6}
             >
@@ -104,7 +121,9 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
             </Pressable>
             <Text style={styles.stepperQty}>{quantity}</Text>
             <Pressable
-              onPress={() => updateQuantity(product.id, quantity + 1)}
+              onPress={() =>
+                updateQuantity(makeCartKey(product.id), quantity + 1)
+              }
               style={styles.stepperBtn}
               hitSlop={6}
             >
@@ -127,6 +146,8 @@ export function ProductCard({ product, compact = false }: ProductCardProps) {
     </Pressable>
   );
 }
+
+export const ProductCard = memo(ProductCardInner);
 
 const styles = StyleSheet.create({
   card: {

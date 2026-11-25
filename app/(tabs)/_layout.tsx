@@ -1,13 +1,13 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 
-import { useStore } from '@/context/StoreContext';
+import { useCart } from '@/context/StoreContext';
 import { COLORS } from '@/theme/tokens';
 
 export default function TabsLayout() {
-  const { cartCount } = useStore();
+  const { cartCount } = useCart();
 
   const iconColor = (color: unknown, focused: boolean) =>
     typeof color === 'string'

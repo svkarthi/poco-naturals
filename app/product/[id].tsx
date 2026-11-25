@@ -1,7 +1,7 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dimensions,
   NativeScrollEvent,
@@ -15,9 +15,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { fetchVariationDetails } from '@/api/woocommerce';
 import { ProductCard } from '@/components/ProductCard';
-import { useStore } from '@/context/StoreContext';
+import { useCart, useCatalog, useWishlist } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING } from '@/theme/tokens';
+import { makeCartKey } from '@/types/store';
 import { formatInr, getDiscountPercent } from '@/utils/format';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -25,20 +27,47 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const {
-    products,
-    getProductById,
-    addToCart,
-    updateQuantity,
-    getItemQuantity,
-    isWishlisted,
-    toggleWishlist,
-  } = useStore();
+  const { products, getProductById } = useCatalog();
+  const { addToCart, updateQuantity, getItemQuantity } = useCart();
+  const { isWishlisted, toggleWishlist } = useWishlist();
 
   const productId = Number(id);
   const product = getProductById(productId);
+
+  const variations = useMemo(
+    () => product?.variations ?? [],
+    [product?.variations]
+  );
+  const [userVariationId, setUserVariationId] = useState<number | undefined>(
+    undefined
+  );
+  const selectedVariationId = variations.some((v) => v.id === userVariationId)
+    ? userVariationId
+    : variations[0]?.id;
+  const setSelectedVariationId = setUserVariationId;
+  const [variationPrices, setVariationPrices] = useState<
+    Record<number, { price: number; regularPrice: number; isInStock: boolean }>
+  >({});
+
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [localQty, setLocalQty] = useState(1);
+
+  // Fetch per-variation pricing if this is a variable product
+  useEffect(() => {
+    if (!selectedVariationId || variationPrices[selectedVariationId]) return;
+    let mounted = true;
+    fetchVariationDetails(selectedVariationId).then((details) => {
+      if (mounted && details) {
+        setVariationPrices((prev) => ({
+          ...prev,
+          [selectedVariationId]: details,
+        }));
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [selectedVariationId, variationPrices]);
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
@@ -64,10 +93,22 @@ export default function ProductDetailScreen() {
     );
   }
 
-  const inCartQty = getItemQuantity(product.id);
+  const selectedVariation = variations.find(
+    (v) => v.id === selectedVariationId
+  );
+  const activeVarPricing = selectedVariationId
+    ? variationPrices[selectedVariationId]
+    : undefined;
+  const displayPrice = activeVarPricing?.price ?? product.price;
+  const displayRegularPrice =
+    activeVarPricing?.regularPrice ?? product.regularPrice;
+  const displayInStock = activeVarPricing?.isInStock ?? product.isInStock;
+
+  const activeCartKey = makeCartKey(product.id, selectedVariation?.id);
+  const inCartQty = getItemQuantity(product.id, selectedVariation?.id);
   const wishlisted = isWishlisted(product.id);
-  const discount = getDiscountPercent(product.regularPrice, product.price);
-  const savings = Math.max(0, product.regularPrice - product.price);
+  const discount = getDiscountPercent(displayRegularPrice, displayPrice);
+  const savings = Math.max(0, displayRegularPrice - displayPrice);
   const images = product.images.length > 0 ? product.images : [];
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -78,7 +119,7 @@ export default function ProductDetailScreen() {
   const handleShare = () => {
     Share.share({
       title: product.name,
-      message: `Check out ${product.name} (${formatInr(product.price)}) on POCO Naturals: ${product.permalink}`,
+      message: `Check out ${product.name} (${formatInr(displayPrice)}) on POCO Naturals: ${product.permalink}`,
       url: product.permalink,
     }).catch(() => {});
   };
@@ -168,14 +209,14 @@ export default function ProductDetailScreen() {
             <View
               style={[
                 styles.stockPill,
-                !product.isInStock && styles.stockPillOut,
+                !displayInStock && styles.stockPillOut,
               ]}
             >
               <View
                 style={[
                   styles.stockDot,
                   {
-                    backgroundColor: product.isInStock
+                    backgroundColor: displayInStock
                       ? COLORS.success
                       : COLORS.danger,
                   },
@@ -184,10 +225,10 @@ export default function ProductDetailScreen() {
               <Text
                 style={[
                   styles.stockText,
-                  !product.isInStock && { color: COLORS.danger },
+                  !displayInStock && { color: COLORS.danger },
                 ]}
               >
-                {product.isInStock ? 'In Stock' : 'Out of Stock'}
+                {displayInStock ? 'In Stock' : 'Out of Stock'}
               </Text>
             </View>
           </View>
@@ -196,12 +237,12 @@ export default function ProductDetailScreen() {
 
           <View style={styles.priceBlock}>
             <Text style={styles.price}>
-              {formatInr(product.price, product.currencySymbol)}
+              {formatInr(displayPrice, product.currencySymbol)}
             </Text>
-            {product.onSale && product.regularPrice > product.price && (
+            {displayRegularPrice > displayPrice && (
               <>
                 <Text style={styles.mrp}>
-                  {formatInr(product.regularPrice, product.currencySymbol)}
+                  {formatInr(displayRegularPrice, product.currencySymbol)}
                 </Text>
                 <View style={styles.savingsPill}>
                   <Text style={styles.savingsText}>
@@ -213,6 +254,37 @@ export default function ProductDetailScreen() {
           </View>
 
           <Text style={styles.taxNote}>Inclusive of all taxes</Text>
+
+          {/* Variable Product / Size Selector */}
+          {variations.length > 0 && (
+            <View style={styles.variationsBlock}>
+              <Text style={styles.variationsTitle}>Select Size / Option</Text>
+              <View style={styles.variationsRow}>
+                {variations.map((v) => {
+                  const active = v.id === selectedVariationId;
+                  return (
+                    <Pressable
+                      key={v.id}
+                      onPress={() => setSelectedVariationId(v.id)}
+                      style={[
+                        styles.variationChip,
+                        active && styles.variationChipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.variationChipText,
+                          active && styles.variationChipTextActive,
+                        ]}
+                      >
+                        {v.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
           {/* Trust Highlights */}
           <View style={styles.trustRow}>
@@ -266,17 +338,17 @@ export default function ProductDetailScreen() {
           <View style={styles.inCartRow}>
             <View style={styles.qtyStepper}>
               <Pressable
-                onPress={() => updateQuantity(product.id, inCartQty - 1)}
+                onPress={() => updateQuantity(activeCartKey, inCartQty - 1)}
                 style={styles.qtyBtn}
               >
-                <Ionicons name="remove" size={18} color={COLORS.primary} />
+                <Ionicons name="remove" size={18} color={COLORS.primaryDark} />
               </Pressable>
               <Text style={styles.qtyValue}>{inCartQty}</Text>
               <Pressable
-                onPress={() => updateQuantity(product.id, inCartQty + 1)}
+                onPress={() => updateQuantity(activeCartKey, inCartQty + 1)}
                 style={styles.qtyBtn}
               >
-                <Ionicons name="add" size={18} color={COLORS.primary} />
+                <Ionicons name="add" size={18} color={COLORS.primaryDark} />
               </Pressable>
             </View>
             <Pressable
@@ -289,7 +361,7 @@ export default function ProductDetailScreen() {
                 color={COLORS.textOnPrimary}
               />
               <Text style={styles.primaryCtaText}>
-                View Cart • {formatInr(product.price * inCartQty)}
+                View Cart • {formatInr(displayPrice * inCartQty)}
               </Text>
             </Pressable>
           </View>
@@ -300,22 +372,30 @@ export default function ProductDetailScreen() {
                 onPress={() => setLocalQty((q) => Math.max(1, q - 1))}
                 style={styles.qtyBtn}
               >
-                <Ionicons name="remove" size={18} color={COLORS.primary} />
+                <Ionicons name="remove" size={18} color={COLORS.primaryDark} />
               </Pressable>
               <Text style={styles.qtyValue}>{localQty}</Text>
               <Pressable
                 onPress={() => setLocalQty((q) => q + 1)}
                 style={styles.qtyBtn}
               >
-                <Ionicons name="add" size={18} color={COLORS.primary} />
+                <Ionicons name="add" size={18} color={COLORS.primaryDark} />
               </Pressable>
             </View>
             <Pressable
-              disabled={!product.isInStock}
-              onPress={() => addToCart(product, localQty)}
+              disabled={!displayInStock}
+              onPress={() =>
+                addToCart(product, {
+                  quantity: localQty,
+                  variationId: selectedVariation?.id,
+                  variationLabel: selectedVariation?.label,
+                  unitPrice: displayPrice,
+                  unitRegularPrice: displayRegularPrice,
+                })
+              }
               style={[
                 styles.primaryCta,
-                !product.isInStock && styles.primaryCtaDisabled,
+                !displayInStock && styles.primaryCtaDisabled,
               ]}
             >
               <Ionicons
@@ -324,8 +404,8 @@ export default function ProductDetailScreen() {
                 color={COLORS.textOnPrimary}
               />
               <Text style={styles.primaryCtaText}>
-                {product.isInStock
-                  ? `Add to Cart • ${formatInr(product.price * localQty)}`
+                {displayInStock
+                  ? `Add to Cart • ${formatInr(displayPrice * localQty)}`
                   : 'Out of Stock'}
               </Text>
             </Pressable>
@@ -475,6 +555,40 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
   },
+  variationsBlock: {
+    marginTop: SPACING.sm,
+    gap: SPACING.xs,
+  },
+  variationsTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+  variationsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: SPACING.sm,
+  },
+  variationChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: COLORS.borderStrong,
+    backgroundColor: COLORS.surface,
+  },
+  variationChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  variationChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.text,
+  },
+  variationChipTextActive: {
+    color: COLORS.textOnPrimary,
+  },
   trustRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -561,7 +675,7 @@ const styles = StyleSheet.create({
   qtyValue: {
     fontSize: 15,
     fontWeight: '800',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
     minWidth: 18,
     textAlign: 'center',
   },

@@ -2,63 +2,53 @@
 
 Production React Native (Expo SDK 58 + TypeScript + Expo Router) mobile commerce app for **POCO Naturals** (`https://poconaturals.in`), aligned 1:1 with the website's branding, color palette, catalog, and navigation.
 
-## Design & Brand Alignment (`poconaturals.in`)
+## Highlights
 
-- **Palette (Blocksy Theme)**:
-  - Primary: `#5A8139` / Primary Dark: `#48682B`
-  - Headings: `#192C27` / Body: `#434F58`
-  - Borders & Tints: `#E6F0EE` / Soft Surface: `#F2F7F6` / Canvas: `#FBFCFC`
-- **Brand Assets**: Uses POCO Naturals' official 1024×1024 logo across `assets/logo.png`, `assets/icon.png`, `assets/adaptive-icon.png`, and `assets/splash-icon.png`.
-- **Storefront & Navigation**:
-  - **Home**: Official logo header, site headline, **Shop by Category**, **Featured Products** (*Cold-Pressed Coconut Oil*, *PALMORA Palm Sugar Candy*, *Pearl Millet Chikkies*, *Premium Foxtail Millet Sevai*), **All Products**, and **Stay Connected with Better Food Choices**.
-  - **Products**: Live WooCommerce Store API (`https://poconaturals.in/wp-json/wc/store/v1`) with search, category filter chips, sorting, pull-to-refresh, and a bundled offline fallback catalog (13 products, 6 categories).
-  - **Blog**: Connected live to WordPress REST API (`https://poconaturals.in/wp-json/wp/v2/posts?_embed`).
-  - **Cart & Checkout**: Persistent local cart (`AsyncStorage`), inline quantity steppers, MRP savings breakdown, ₹499 free-delivery progress bar, in-app `WebView` checkout handoff to `https://poconaturals.in/checkout/` (UPI, Cards, COD), and quick WhatsApp ordering (`+91 99943 69555`).
-  - **More**: Saved wishlist items, **About Us** (matching `poconaturals.in/about-us/`), **Privacy Policy** (linked to `poconaturals.in/privacy-policy-2/`), direct Call / WhatsApp / Email support, and live API sync status.
-  - **Production Resilience**: Wrapped in a root `ErrorBoundary` for graceful crash recovery.
+- **Exact `poconaturals.in` Palette & Assets**:
+  - Blocksy theme palette (`#5A8139` primary, `#48682B` dark green, `#192C27` headings, `#434F58` body, `#E6F0EE` borders, `#F2F7F6` soft mint surfaces, `#FBFCFC` canvas).
+  - Official 1024×1024 brand logo (`assets/logo.png`, `assets/icon.png`, `assets/splash-icon.png`) plus safe-zone padded Android adaptive icon (`assets/adaptive-icon.png`).
+- **Live WooCommerce Store API + Offline Cache**:
+  - Multi-page product & category fetching from `https://poconaturals.in/wp-json/wc/store/v1`, supporting both simple and variable products (`variations` size/option selector).
+  - Persists the latest synced live catalog in `AsyncStorage` and falls back gracefully to a bundled catalog when offline.
+- **Isolated State Architecture**:
+  - Split `CatalogContext`, `CartContext`, and `WishlistContext` (`useCatalog`, `useCart`, `useWishlist`) to prevent unnecessary screen re-renders.
+- **India-Ready Checkout Handoff**:
+  - Syncs the native cart into `poconaturals.in`'s WooCommerce session via the `/wc/store/v1/batch` API (with sequential fallback) and opens `/checkout/` inside an in-app `WebView`.
+  - Intercepts UPI payment deep links (`upi://`, `tez://`, `phonepe://`, `paytmmp://`, `bhim://`, and Android `intent://` URLs) via `Linking.openURL()`, backed by Android 11+ `<queries>` manifest declarations (`plugins/withUpiQueries.js`).
+- **WordPress Blog, About Us & Privacy Policy**:
+  - Live `/wp-json/wp/v2/posts?_embed` integration, verbatim About Us screen, Play Store-compliant Privacy Policy screen, Android App Links (`intentFilters` for `https://poconaturals.in/*`), and a root `ErrorBoundary`.
 
-## Tech Stack
-
-- **Expo SDK 58** (`expo ^58.0.26`) & **Expo Router** (`~58.0.32`)
-- **React 19.3** & **React Native 0.88**
-- **TypeScript 6.0** (`strict: true`)
-- `react-native-webview`, `@react-native-async-storage/async-storage`, `expo-image`, `expo-haptics`, `expo-web-browser`
-
-## Local Development
+## Local Development & Verification
 
 ```bash
 cd /Users/karthivelu/dev/mobile-apps/poco-naturals
 npm install
+npx expo-doctor
+npm run lint
 npm run typecheck
+npm test
 npx expo start --port 8082
 ```
 
-Then press:
-- `i` to open in the iOS Simulator
-- `a` to open in the Android Emulator
-- `w` to open in the Web browser
-- Or scan the QR code with **Expo Go** on your phone.
+## CI/CD — Android APK & Play Store AAB (GitHub Actions)
 
-## CI/CD — Android APK Builds (GitHub Actions)
+`.github/workflows/android-apk.yml` runs on every push to `main`, `v*` tags, and manual `workflow_dispatch` (with `concurrency` cancellation on superseded branch builds):
 
-`.github/workflows/android-apk.yml` automatically builds an Android release APK using **Node 22** and **Java 21**:
+1. Runs `npm run lint`, `npm run typecheck`, and `npm test -- --ci`.
+2. Runs `npx expo prebuild --platform android --clean --no-install` and `./gradlew assembleRelease --no-daemon` (Java 21 + Gradle cache).
+3. Uploads `poco-naturals-<ref>-<sha>.apk` (and publishes a GitHub Release on `v*` tags).
 
-- **Triggers**: Every push to `main`, `v*` tags, or manual `workflow_dispatch`.
-- **Steps**: `npm ci` → `npm run typecheck` → `npx expo prebuild --platform android --clean --no-install` → `./gradlew assembleRelease --no-daemon`.
-- **Artifacts**: Uploads `poco-naturals-<ref>-<sha>.apk` on every run, and automatically publishes a **GitHub Release** with the APK attached when pushing a `v*` tag (e.g. `git tag v1.0.0 && git push origin v1.0.0`).
+### Google Play Store Release (`.aab`)
 
-## Releasing to Google Play Store
-
-Google Play Console requires a **signed `.aab` (Android App Bundle)** rather than a sideloadable `.apk`.
-
-- **Android Package**: `in.poconaturals.app` (`versionCode: 1` in `app.json`)
+- **Android Package**: `com.poconaturals.app` (`versionCode: 1` in `app.json`)
 - **Privacy Policy URL**: `https://poconaturals.in/privacy-policy-2/`
 
-To build a signed Play Store `.aab` using the included `eas.json`:
+You can produce a signed Play Store `.aab` in either of two ways:
 
-```bash
-npx eas login
-npx eas build --platform android --profile production
-```
-
-For subsequent Play Store releases, increment `android.versionCode` in `app.json` (or rely on EAS `autoIncrement: true` in the `production` profile).
+1. **Via EAS Build**:
+   ```bash
+   npx eas login
+   npx eas build --platform android --profile production
+   ```
+2. **Via GitHub Actions Secrets** (`plugins/withReleaseSigning.js`):
+   Add `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, and `ANDROID_KEY_PASSWORD` to repository secrets — the workflow will automatically sign the release and build both `.apk` and `.aab` (`app-release.aab`).

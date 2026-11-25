@@ -1,6 +1,6 @@
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   FlatList,
   Pressable,
@@ -13,13 +13,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { OfflineBanner } from '@/components/OfflineBanner';
 import { ProductCard } from '@/components/ProductCard';
-import { useStore } from '@/context/StoreContext';
+import { useCatalog } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING } from '@/theme/tokens';
 import type { SortOption } from '@/types/store';
 import { getDiscountPercent } from '@/utils/format';
 
-const SORT_OPTIONS: Array<{ id: SortOption; label: string }> = [
+const SORT_OPTIONS: { id: SortOption; label: string }[] = [
   { id: 'featured', label: 'Featured' },
   { id: 'price_asc', label: 'Price: Low' },
   { id: 'price_desc', label: 'Price: High' },
@@ -28,17 +29,22 @@ const SORT_OPTIONS: Array<{ id: SortOption; label: string }> = [
 
 export default function ShopScreen() {
   const params = useLocalSearchParams<{ category?: string }>();
-  const { products, categories, isLoadingCatalog, refreshCatalog } = useStore();
+  const { products, categories, isLoadingCatalog, refreshCatalog } = useCatalog();
 
+  const paramCategory =
+    typeof params.category === 'string' ? params.category : undefined;
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [categoryOverride, setCategoryOverride] = useState<{
+    baseParam?: string;
+    value: string;
+  } | null>(null);
+  const selectedCategory =
+    categoryOverride && categoryOverride.baseParam === paramCategory
+      ? categoryOverride.value
+      : paramCategory ?? 'all';
+  const setSelectedCategory = (value: string) =>
+    setCategoryOverride({ baseParam: paramCategory, value });
   const [sortBy, setSortBy] = useState<SortOption>('featured');
-
-  useEffect(() => {
-    if (params.category && typeof params.category === 'string') {
-      setSelectedCategory(params.category);
-    }
-  }, [params.category]);
 
   const filteredProducts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -98,6 +104,8 @@ export default function ShopScreen() {
           </Pressable>
         )}
       </View>
+
+      <OfflineBanner />
 
       {/* Category Filter Chips */}
       <View style={styles.chipsContainer}>
