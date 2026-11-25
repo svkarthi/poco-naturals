@@ -2,10 +2,12 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import * as WebBrowser from 'expo-web-browser';
 import React from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 
 export default function PrivacyPolicyScreen() {
+  const insets = useSafeAreaInsets();
   const openFullPolicy = () => {
     WebBrowser.openBrowserAsync(STORE_INFO.privacyPolicyUrl).catch(() =>
       Linking.openURL(STORE_INFO.privacyPolicyUrl)
@@ -15,7 +17,10 @@ export default function PrivacyPolicyScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: SPACING.xxl + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.card}>

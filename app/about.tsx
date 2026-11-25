@@ -2,16 +2,21 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Image } from 'expo-image';
 import React from 'react';
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 
 const BRAND_LOGO = require('../assets/logo.png');
 
 export default function AboutScreen() {
+  const insets = useSafeAreaInsets();
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: SPACING.xxl + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.hero}>

@@ -46,6 +46,7 @@ export function CategoryTile({ slug, name, count, onPress }: CategoryTileProps) 
 const styles = StyleSheet.create({
   tile: {
     width: 112,
+    flexShrink: 0,
     backgroundColor: COLORS.surface,
     borderRadius: RADIUS.lg,
     borderWidth: 1,

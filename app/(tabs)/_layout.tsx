@@ -2,12 +2,18 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useCart } from '@/context/StoreContext';
 import { COLORS } from '@/theme/tokens';
 
 export default function TabsLayout() {
   const { cartCount } = useCart();
+  const insets = useSafeAreaInsets();
+  const bottomPadding = Math.max(
+    insets.bottom,
+    Platform.OS === 'ios' ? 20 : 8
+  );
 
   const iconColor = (color: unknown, focused: boolean) =>
     typeof color === 'string'
@@ -26,12 +32,13 @@ export default function TabsLayout() {
           backgroundColor: COLORS.surface,
           borderTopColor: COLORS.border,
           borderTopWidth: 1,
-          height: Platform.OS === 'ios' ? 84 : 64,
+          height: 56 + bottomPadding,
           paddingTop: 6,
-          paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+          paddingBottom: bottomPadding,
         },
         tabBarLabelStyle: {
           fontSize: 11,
+          lineHeight: 14,
           fontWeight: '600',
         },
       }}

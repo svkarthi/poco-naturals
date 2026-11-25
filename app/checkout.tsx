@@ -247,7 +247,7 @@ export default function CheckoutScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView edges={['bottom']} style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Secure Checkout',
@@ -334,7 +334,7 @@ export default function CheckoutScreen() {
           </View>
         </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 }
 

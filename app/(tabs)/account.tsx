@@ -58,6 +58,7 @@ export default function AccountScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.horizontalScroll}
             contentContainerStyle={styles.savedScroll}
           >
             {savedProducts.map((product) => (
@@ -285,8 +286,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: SPACING.lg,
     marginTop: SPACING.xs,
   },
+  horizontalScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   savedScroll: {
     paddingHorizontal: SPACING.lg,
+    paddingVertical: 2,
     gap: SPACING.md,
   },
   emptySavedCard: {

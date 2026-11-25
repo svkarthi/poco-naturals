@@ -41,8 +41,9 @@ function ProductCardInner({ product, compact = false }: ProductCardProps) {
           <Image
             source={{ uri: primaryImage }}
             style={styles.image}
-            contentFit="cover"
-            transition={200}
+            contentFit="contain"
+            cachePolicy="memory-disk"
+            transition={180}
           />
         ) : (
           <View style={styles.imagePlaceholder}>
@@ -161,18 +162,23 @@ const styles = StyleSheet.create({
   cardCompact: {
     width: 176,
     flex: 0,
+    flexGrow: 0,
+    flexShrink: 0,
   },
   cardPressed: {
     opacity: 0.96,
     transform: [{ scale: 0.99 }],
   },
   imageWrap: {
-    aspectRatio: 1,
-    backgroundColor: COLORS.surfaceMuted,
+    aspectRatio: 0.95,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.surfaceMuted,
+    padding: SPACING.sm,
     position: 'relative',
   },
   imageWrapCompact: {
-    height: 148,
+    height: 156,
     aspectRatio: undefined,
   },
   image: {

@@ -3,7 +3,6 @@ import { Image } from 'expo-image';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
-  Dimensions,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Pressable,
@@ -11,6 +10,7 @@ import {
   Share,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,9 +22,9 @@ import { COLORS, RADIUS, SPACING } from '@/theme/tokens';
 import { makeCartKey } from '@/types/store';
 import { formatInr, getDiscountPercent } from '@/utils/format';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-
 export default function ProductDetailScreen() {
+  const { width: screenWidth } = useWindowDimensions();
+  const galleryHeight = Math.min(screenWidth, 380);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { products, getProductById } = useCatalog();
@@ -112,7 +112,7 @@ export default function ProductDetailScreen() {
   const images = product.images.length > 0 ? product.images : [];
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const idx = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+    const idx = Math.round(e.nativeEvent.contentOffset.x / screenWidth);
     setActiveImageIndex(idx);
   };
 
@@ -155,7 +155,12 @@ export default function ProductDetailScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Image Gallery */}
-        <View style={styles.galleryWrap}>
+        <View
+          style={[
+            styles.galleryWrap,
+            { width: screenWidth, height: galleryHeight },
+          ]}
+        >
           {images.length > 0 ? (
             <ScrollView
               horizontal
@@ -164,13 +169,21 @@ export default function ProductDetailScreen() {
               onMomentumScrollEnd={handleScroll}
             >
               {images.map((img) => (
-                <Image
+                <View
                   key={img.id}
-                  source={{ uri: img.src }}
-                  style={styles.heroImage}
-                  contentFit="cover"
-                  transition={200}
-                />
+                  style={[
+                    styles.slideBox,
+                    { width: screenWidth, height: galleryHeight },
+                  ]}
+                >
+                  <Image
+                    source={{ uri: img.src }}
+                    style={styles.heroImage}
+                    contentFit="contain"
+                    cachePolicy="memory-disk"
+                    transition={180}
+                  />
+                </View>
               ))}
             </ScrollView>
           ) : (
@@ -187,15 +200,17 @@ export default function ProductDetailScreen() {
 
           {images.length > 1 && (
             <View style={styles.dotsRow}>
-              {images.map((img, i) => (
-                <View
-                  key={img.id}
-                  style={[
-                    styles.dot,
-                    i === activeImageIndex && styles.dotActive,
-                  ]}
-                />
-              ))}
+              <View style={styles.dotsPill}>
+                {images.map((img, i) => (
+                  <View
+                    key={img.id}
+                    style={[
+                      styles.dot,
+                      i === activeImageIndex && styles.dotActive,
+                    ]}
+                  />
+                ))}
+              </View>
             </View>
           )}
         </View>
@@ -322,6 +337,7 @@ export default function ProductDetailScreen() {
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
+              style={styles.horizontalScroll}
               contentContainerStyle={styles.relatedScroll}
             >
               {relatedProducts.map((rel) => (
@@ -433,14 +449,19 @@ const styles = StyleSheet.create({
     paddingBottom: SPACING.xxl,
   },
   galleryWrap: {
-    width: SCREEN_WIDTH,
-    height: Math.min(SCREEN_WIDTH, 380),
-    backgroundColor: COLORS.surfaceMuted,
+    backgroundColor: COLORS.surface,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
     position: 'relative',
   },
+  slideBox: {
+    padding: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroImage: {
-    width: SCREEN_WIDTH,
-    height: Math.min(SCREEN_WIDTH, 380),
+    width: '100%',
+    height: '100%',
   },
   imagePlaceholder: {
     flex: 1,
@@ -464,18 +485,25 @@ const styles = StyleSheet.create({
   },
   dotsRow: {
     position: 'absolute',
-    bottom: SPACING.md,
+    bottom: SPACING.sm,
     left: 0,
     right: 0,
+    alignItems: 'center',
+  },
+  dotsPill: {
     flexDirection: 'row',
-    justifyContent: 'center',
+    alignItems: 'center',
     gap: 6,
+    backgroundColor: 'rgba(242, 247, 246, 0.92)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: RADIUS.pill,
   },
   dot: {
     width: 7,
     height: 7,
     borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.55)',
+    backgroundColor: 'rgba(25, 44, 39, 0.22)',
   },
   dotActive: {
     width: 20,
@@ -640,8 +668,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     paddingHorizontal: SPACING.lg,
   },
+  horizontalScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   relatedScroll: {
     paddingHorizontal: SPACING.lg,
+    paddingVertical: 2,
     gap: SPACING.md,
   },
   bottomBar: {

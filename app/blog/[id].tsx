@@ -11,10 +11,12 @@ import {
   Text,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { COLORS, RADIUS, SPACING } from '@/theme/tokens';
 
 export default function BlogDetailScreen() {
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{
     title?: string;
     content?: string;
@@ -34,7 +36,10 @@ export default function BlogDetailScreen() {
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[
+        styles.content,
+        { paddingBottom: SPACING.xxl + insets.bottom },
+      ]}
       showsVerticalScrollIndicator={false}
     >
       <Stack.Screen options={{ title: 'Article' }} />

@@ -151,6 +151,7 @@ export default function HomeScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
           contentContainerStyle={styles.horizontalList}
         >
           {categories.map((cat) => (
@@ -185,6 +186,7 @@ export default function HomeScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
           contentContainerStyle={styles.horizontalList}
         >
           {featuredProducts.map((product) => (
@@ -449,8 +451,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primary,
   },
+  horizontalScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   horizontalList: {
     paddingHorizontal: SPACING.lg,
+    paddingVertical: 2,
     gap: SPACING.md,
   },
   promiseGrid: {
