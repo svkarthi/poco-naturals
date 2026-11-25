@@ -112,6 +112,7 @@ export default function ShopScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
           contentContainerStyle={styles.chipsScroll}
         >
           <Pressable
@@ -151,38 +152,39 @@ export default function ShopScreen() {
       </View>
 
       {/* Sort Bar */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={styles.sortBar}
-        contentContainerStyle={styles.sortScroll}
-      >
-        <Ionicons
-          name="swap-vertical-outline"
-          size={15}
-          color={COLORS.textSecondary}
-          style={{ alignSelf: 'center' }}
-        />
-        {SORT_OPTIONS.map((opt) => {
-          const active = sortBy === opt.id;
-          return (
-            <Pressable
-              key={opt.id}
-              onPress={() => setSortBy(opt.id)}
-              style={[styles.sortPill, active && styles.sortPillActive]}
-            >
-              <Text
-                style={[
-                  styles.sortPillText,
-                  active && styles.sortPillTextActive,
-                ]}
+      <View style={styles.sortContainer}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.horizontalScroll}
+          contentContainerStyle={styles.sortScroll}
+        >
+          <Ionicons
+            name="swap-vertical-outline"
+            size={15}
+            color={COLORS.textSecondary}
+          />
+          {SORT_OPTIONS.map((opt) => {
+            const active = sortBy === opt.id;
+            return (
+              <Pressable
+                key={opt.id}
+                onPress={() => setSortBy(opt.id)}
+                style={[styles.sortPill, active && styles.sortPillActive]}
               >
-                {opt.label}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </ScrollView>
+                <Text
+                  style={[
+                    styles.sortPillText,
+                    active && styles.sortPillTextActive,
+                  ]}
+                >
+                  {opt.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Product Grid */}
       <FlatList
@@ -229,6 +231,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   header: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
@@ -247,11 +250,12 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   searchWrap: {
+    flexShrink: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: SPACING.sm,
     marginHorizontal: SPACING.lg,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
     backgroundColor: COLORS.surface,
     borderWidth: 1,
     borderColor: COLORS.border,
@@ -265,14 +269,27 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     padding: 0,
   },
+  horizontalScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   chipsContainer: {
-    marginBottom: SPACING.sm,
+    flexShrink: 0,
+    minHeight: 46,
+    justifyContent: 'center',
+    marginBottom: SPACING.xs,
   },
   chipsScroll: {
     paddingHorizontal: SPACING.lg,
+    paddingVertical: 4,
+    alignItems: 'center',
     gap: SPACING.sm,
   },
   chip: {
+    flexShrink: 0,
+    minHeight: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: RADIUS.pill,
@@ -286,39 +303,54 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontSize: 13,
+    lineHeight: 18,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   chipTextActive: {
     color: COLORS.textOnPrimary,
   },
-  sortBar: {
-    flexGrow: 0,
-    marginBottom: SPACING.md,
+  sortContainer: {
+    flexShrink: 0,
+    minHeight: 40,
+    justifyContent: 'center',
+    marginBottom: SPACING.sm,
   },
   sortScroll: {
     paddingHorizontal: SPACING.lg,
+    paddingVertical: 4,
+    alignItems: 'center',
     gap: SPACING.sm,
   },
   sortPill: {
-    paddingHorizontal: 11,
-    paddingVertical: 5,
+    flexShrink: 0,
+    minHeight: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: RADIUS.pill,
     backgroundColor: COLORS.surfaceMuted,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
   sortPillActive: {
-    backgroundColor: COLORS.accentTint,
+    backgroundColor: COLORS.primaryTint,
+    borderColor: COLORS.primary,
   },
   sortPillText: {
     fontSize: 12,
+    lineHeight: 16,
     fontWeight: '600',
     color: COLORS.textSecondary,
   },
   sortPillTextActive: {
-    color: COLORS.accent,
+    color: COLORS.primaryDark,
+    fontWeight: '700',
   },
   listContent: {
     paddingHorizontal: SPACING.lg,
+    paddingTop: SPACING.xs,
     paddingBottom: SPACING.xxl,
     gap: SPACING.md,
   },
