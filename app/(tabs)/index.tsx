@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
 import {
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -15,7 +17,8 @@ import { CategoryTile } from '@/components/CategoryTile';
 import { ProductCard } from '@/components/ProductCard';
 import { useStore } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
-import { getDiscountPercent } from '@/utils/format';
+
+const BRAND_LOGO = require('../../assets/logo.png');
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -28,18 +31,19 @@ export default function HomeScreen() {
     cartCount,
   } = useStore();
 
-  const bestDeals = useMemo(() => {
-    return [...products]
-      .sort(
-        (a, b) =>
-          getDiscountPercent(b.regularPrice, b.price) -
-          getDiscountPercent(a.regularPrice, a.price)
-      )
-      .slice(0, 6);
+  // Match the exact Featured Products highlighted on poconaturals.in
+  const featuredProducts = useMemo(() => {
+    const slugOrder: readonly string[] = STORE_INFO.featuredProductSlugs;
+    const matched = slugOrder
+      .map((slug) => products.find((p) => p.slug === slug))
+      .filter((p): p is NonNullable<typeof p> => Boolean(p));
+    return matched.length > 0 ? matched : products.slice(0, 4);
   }, [products]);
 
   const pairedProducts = useMemo(() => {
-    const rows: Array<[typeof products[number], typeof products[number] | undefined]> = [];
+    const rows: Array<
+      [(typeof products)[number], (typeof products)[number] | undefined]
+    > = [];
     for (let i = 0; i < products.length; i += 2) {
       rows.push([products[i], products[i + 1]]);
     }
@@ -60,22 +64,31 @@ export default function HomeScreen() {
           />
         }
       >
-        {/* Top Brand Bar */}
+        {/* Top Brand Bar with Real POCO Naturals Logo */}
         <View style={styles.header}>
-          <View>
-            <View style={styles.brandRow}>
-              <Text style={styles.brandMark}>POCO</Text>
-              <Text style={styles.brandSub}>NATURALS</Text>
+          <View style={styles.brandLeft}>
+            <Image
+              source={BRAND_LOGO}
+              style={styles.logo}
+              contentFit="contain"
+            />
+            <View>
+              <Text style={styles.brandName}>{STORE_INFO.brandName}</Text>
+              <Text style={styles.locationText}>
+                Udumalaipettai, TN • {isLiveData ? 'Live Store' : 'Catalog'}
+              </Text>
             </View>
-            <Text style={styles.locationText}>
-              Udumalaipettai, Tamil Nadu • {isLiveData ? 'Live Store' : 'Catalog'}
-            </Text>
           </View>
           <Pressable
             onPress={() => router.push('/(tabs)/cart')}
             style={styles.cartPill}
+            accessibilityLabel="Open cart"
           >
-            <Ionicons name="bag-handle-outline" size={18} color={COLORS.primary} />
+            <Ionicons
+              name="bag-handle-outline"
+              size={18}
+              color={COLORS.primary}
+            />
             <Text style={styles.cartPillText}>{cartCount}</Text>
           </Pressable>
         </View>
@@ -87,22 +100,20 @@ export default function HomeScreen() {
         >
           <Ionicons name="search-outline" size={18} color={COLORS.textMuted} />
           <Text style={styles.searchPlaceholder}>
-            Search millets, karupatti, cold-pressed oil, honey...
+            Search millets, karupatti, coconut oil, honey...
           </Text>
         </Pressable>
 
-        {/* Editorial Heritage Hero */}
+        {/* Hero Section matching poconaturals.in */}
         <View style={styles.heroCard}>
           <View style={styles.heroPill}>
-            <Ionicons name="leaf" size={12} color={COLORS.gold} />
-            <Text style={styles.heroPillText}>TAMIL NADU HERITAGE FOODS</Text>
+            <Ionicons name="leaf" size={12} color="#DDF0D2" />
+            <Text style={styles.heroPillText}>POCO NATURALS • TAMIL NADU</Text>
           </View>
-          <Text style={styles.heroTitle}>
-            Pure, traditional ingredients for everyday nourishment.
-          </Text>
+          <Text style={styles.heroTitle}>{STORE_INFO.heroHeadline}</Text>
           <Text style={styles.heroSubtitle}>
-            Cold-pressed oils, heirloom millets, wild forest honey & palm jaggery
-            crafted with care from Udumalaipettai.
+            Traditional grains, cold-pressed coconut oils, palm jaggery & wild
+            forest honey crafted for modern Indian households.
           </Text>
           <View style={styles.heroActions}>
             <Pressable
@@ -112,23 +123,23 @@ export default function HomeScreen() {
                 pressed && { opacity: 0.9 },
               ]}
             >
-              <Text style={styles.heroCtaText}>Explore Store</Text>
+              <Text style={styles.heroCtaText}>Shop Products</Text>
               <Ionicons
                 name="arrow-forward"
                 size={16}
-                color={COLORS.primary}
+                color={COLORS.primaryDark}
               />
             </Pressable>
-            <View style={styles.shippingNote}>
-              <Ionicons name="cube-outline" size={14} color="#D8ECE0" />
-              <Text style={styles.shippingNoteText}>
-                Free delivery ₹{STORE_INFO.freeShippingThreshold}+
-              </Text>
-            </View>
+            <Pressable
+              onPress={() => router.push('/about')}
+              style={styles.heroSecondaryBtn}
+            >
+              <Text style={styles.heroSecondaryText}>About Us</Text>
+            </Pressable>
           </View>
         </View>
 
-        {/* Categories */}
+        {/* Shop by Category */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Shop by Category</Text>
           <Pressable onPress={() => router.push('/(tabs)/shop')}>
@@ -157,12 +168,12 @@ export default function HomeScreen() {
           ))}
         </ScrollView>
 
-        {/* Best Deals Horizontal Carousel */}
+        {/* Featured Products matching poconaturals.in */}
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Fresh Deals</Text>
+            <Text style={styles.sectionTitle}>Featured Products</Text>
             <Text style={styles.sectionSubtitle}>
-              Direct farm-to-home savings
+              Handpicked favourites from poconaturals.in
             </Text>
           </View>
           <Pressable onPress={() => router.push('/(tabs)/shop')}>
@@ -175,36 +186,42 @@ export default function HomeScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.horizontalList}
         >
-          {bestDeals.map((product) => (
+          {featuredProducts.map((product) => (
             <ProductCard key={product.id} product={product} compact />
           ))}
         </ScrollView>
 
-        {/* Heritage Promise Strip */}
+        {/* Quality & Care Promise Strip */}
         <View style={styles.promiseGrid}>
           <View style={styles.promiseItem}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.primary} />
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={20}
+              color={COLORS.primary}
+            />
             <Text style={styles.promiseTitle}>100% Natural</Text>
-            <Text style={styles.promiseDesc}>No preservatives</Text>
+            <Text style={styles.promiseDesc}>Carefully sourced</Text>
           </View>
           <View style={styles.promiseDivider} />
           <View style={styles.promiseItem}>
-            <Ionicons name="sunny-outline" size={20} color={COLORS.accent} />
-            <Text style={styles.promiseTitle}>Small Batch</Text>
-            <Text style={styles.promiseDesc}>Traditional craft</Text>
-          </View>
-          <View style={styles.promiseDivider} />
-          <View style={styles.promiseItem}>
-            <Ionicons name="heart-outline" size={20} color={COLORS.gold} />
-            <Text style={styles.promiseTitle}>Farm Direct</Text>
+            <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.promiseTitle}>Traditional</Text>
             <Text style={styles.promiseDesc}>Tamil Nadu roots</Text>
+          </View>
+          <View style={styles.promiseDivider} />
+          <View style={styles.promiseItem}>
+            <Ionicons name="cube-outline" size={20} color={COLORS.primary} />
+            <Text style={styles.promiseTitle}>Free Delivery</Text>
+            <Text style={styles.promiseDesc}>
+              Orders ₹{STORE_INFO.freeShippingThreshold}+
+            </Text>
           </View>
         </View>
 
         {/* All Products 2-Column Grid */}
         <View style={styles.sectionHeader}>
           <View>
-            <Text style={styles.sectionTitle}>Our Natural Pantry</Text>
+            <Text style={styles.sectionTitle}>All Products</Text>
             <Text style={styles.sectionSubtitle}>
               {products.length} wholesome essentials
             </Text>
@@ -222,6 +239,43 @@ export default function HomeScreen() {
               )}
             </View>
           ))}
+        </View>
+
+        {/* Stay Connected Card matching poconaturals.in */}
+        <View style={styles.connectCard}>
+          <Text style={styles.connectTitle}>
+            Stay Connected with Better Food Choices
+          </Text>
+          <Text style={styles.connectSubtitle}>
+            Read our latest traditional food stories or chat with our
+            Udumalaipettai team on WhatsApp.
+          </Text>
+          <View style={styles.connectActions}>
+            <Pressable
+              onPress={() => router.push('/(tabs)/blog')}
+              style={styles.connectOutlineBtn}
+            >
+              <Ionicons
+                name="newspaper-outline"
+                size={16}
+                color={COLORS.primary}
+              />
+              <Text style={styles.connectOutlineText}>Read Blog</Text>
+            </Pressable>
+            <Pressable
+              onPress={() =>
+                Linking.openURL(`https://wa.me/${STORE_INFO.whatsappNumber}`)
+              }
+              style={styles.connectPrimaryBtn}
+            >
+              <Ionicons
+                name="logo-whatsapp"
+                size={16}
+                color={COLORS.textOnPrimary}
+              />
+              <Text style={styles.connectPrimaryText}>WhatsApp Us</Text>
+            </Pressable>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -247,27 +301,28 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
     paddingBottom: SPACING.md,
   },
-  brandRow: {
+  brandLeft: {
     flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 5,
+    alignItems: 'center',
+    gap: 10,
   },
-  brandMark: {
-    fontSize: 22,
-    fontWeight: '900',
-    color: COLORS.primary,
-    letterSpacing: 1.2,
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
   },
-  brandSub: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.accent,
-    letterSpacing: 2,
+  brandName: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.text,
   },
   locationText: {
     fontSize: 12,
     color: COLORS.textSecondary,
-    marginTop: 2,
+    marginTop: 1,
   },
   cartPill: {
     flexDirection: 'row',
@@ -315,41 +370,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
     alignSelf: 'flex-start',
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    backgroundColor: 'rgba(255,255,255,0.16)',
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: RADIUS.pill,
   },
   heroPillText: {
-    color: '#F5E7C4',
+    color: '#F1F8EC',
     fontSize: 10,
     fontWeight: '700',
     letterSpacing: 1,
   },
   heroTitle: {
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '800',
     color: COLORS.textOnPrimary,
-    lineHeight: 30,
+    lineHeight: 27,
   },
   heroSubtitle: {
     fontSize: 13,
-    color: '#D5E5DB',
+    color: '#E6F0E4',
     lineHeight: 20,
   },
   heroActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: SPACING.sm,
     marginTop: SPACING.xs,
     flexWrap: 'wrap',
-    gap: SPACING.sm,
   },
   heroCta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: '#FAF6F0',
+    backgroundColor: COLORS.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: RADIUS.pill,
@@ -357,17 +411,19 @@ const styles = StyleSheet.create({
   heroCtaText: {
     fontSize: 14,
     fontWeight: '700',
-    color: COLORS.primary,
+    color: COLORS.primaryDark,
   },
-  shippingNote: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+  heroSecondaryBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: RADIUS.pill,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.45)',
   },
-  shippingNoteText: {
-    fontSize: 12,
-    color: '#D8ECE0',
-    fontWeight: '600',
+  heroSecondaryText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textOnPrimary,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -434,5 +490,62 @@ const styles = StyleSheet.create({
   gridRow: {
     flexDirection: 'row',
     gap: SPACING.md,
+  },
+  connectCard: {
+    marginHorizontal: SPACING.lg,
+    marginTop: SPACING.xl,
+    backgroundColor: COLORS.surfaceMuted,
+    borderRadius: RADIUS.xl,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: SPACING.lg,
+    gap: SPACING.sm,
+  },
+  connectTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: COLORS.text,
+  },
+  connectSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 20,
+  },
+  connectActions: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginTop: SPACING.xs,
+  },
+  connectOutlineBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: RADIUS.pill,
+  },
+  connectOutlineText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+  },
+  connectPrimaryBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primary,
+    paddingVertical: 10,
+    borderRadius: RADIUS.pill,
+  },
+  connectPrimaryText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textOnPrimary,
   },
 });

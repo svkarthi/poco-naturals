@@ -45,4 +45,15 @@ export interface CartItem {
   quantity: number;
 }
 
+export interface BlogPost {
+  id: number;
+  slug: string;
+  title: string;
+  excerpt: string;
+  content: string;
+  date: string;
+  link: string;
+  featuredImage?: string;
+}
+
 export type SortOption = 'featured' | 'price_asc' | 'price_desc' | 'discount';

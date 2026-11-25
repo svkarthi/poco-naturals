@@ -259,7 +259,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFill,
-    backgroundColor: 'rgba(250, 246, 240, 0.94)',
+    backgroundColor: 'rgba(251, 252, 252, 0.94)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: SPACING.xl,

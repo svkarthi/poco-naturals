@@ -234,10 +234,10 @@ const styles = StyleSheet.create({
     borderRadius: RADIUS.md,
     backgroundColor: COLORS.primaryTint,
     borderWidth: 1,
-    borderColor: '#CBE0D2',
+    borderColor: COLORS.borderStrong,
   },
   addBtnPressed: {
-    backgroundColor: '#D6E8DC',
+    backgroundColor: COLORS.surfaceMuted,
   },
   addBtnText: {
     fontSize: 13,

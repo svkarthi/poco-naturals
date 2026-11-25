@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useMemo } from 'react';
 import {
@@ -16,6 +17,7 @@ import { useStore } from '@/context/StoreContext';
 import { COLORS, RADIUS, SPACING, STORE_INFO } from '@/theme/tokens';
 
 export default function AccountScreen() {
+  const router = useRouter();
   const {
     products,
     wishlistIds,
@@ -43,7 +45,7 @@ export default function AccountScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.title}>More & Heritage</Text>
+        <Text style={styles.title}>More</Text>
 
         {/* Saved Items Section */}
         <View style={styles.sectionHeader}>
@@ -66,10 +68,142 @@ export default function AccountScreen() {
           <View style={styles.emptySavedCard}>
             <Ionicons name="heart-outline" size={22} color={COLORS.textMuted} />
             <Text style={styles.emptySavedText}>
-              Tap the heart on any product to save your favorites here.
+              Tap the heart on any product to save your favourites here.
             </Text>
           </View>
         )}
+
+        {/* Site Pages matching poconaturals.in */}
+        <Text style={styles.sectionTitleStandalone}>POCO Naturals</Text>
+        <View style={styles.card}>
+          <Pressable
+            onPress={() => router.push('/about')}
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons name="leaf-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>About Us</Text>
+              <Text style={styles.actionSub}>Our story & Tamil Nadu roots</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            onPress={() => router.push('/(tabs)/blog')}
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons
+                name="newspaper-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>Blog</Text>
+              <Text style={styles.actionSub}>Traditional food articles</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            onPress={() => router.push('/privacy')}
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={20}
+                color={COLORS.primary}
+              />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>Privacy Policy</Text>
+              <Text style={styles.actionSub}>How we protect your data</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+        </View>
+
+        {/* Contact & Support */}
+        <Text style={styles.sectionTitleStandalone}>Contact Us</Text>
+        <View style={styles.card}>
+          <Pressable
+            onPress={() =>
+              Linking.openURL(`https://wa.me/${STORE_INFO.whatsappNumber}`)
+            }
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons name="logo-whatsapp" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>WhatsApp Support</Text>
+              <Text style={styles.actionSub}>{STORE_INFO.phonePrimary}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            onPress={() =>
+              Linking.openURL(
+                `tel:${STORE_INFO.phonePrimary.replace(/\s+/g, '')}`
+              )
+            }
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons name="call-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>Call Us</Text>
+              <Text style={styles.actionSub}>
+                {STORE_INFO.phonePrimary} / {STORE_INFO.phoneSecondary}
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            onPress={() => Linking.openURL(`mailto:${STORE_INFO.email}`)}
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons name="mail-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>Email</Text>
+              <Text style={styles.actionSub}>{STORE_INFO.email}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+          </Pressable>
+
+          <View style={styles.divider} />
+
+          <Pressable
+            onPress={() => openUrl(STORE_INFO.baseUrl)}
+            style={styles.actionRow}
+          >
+            <View style={styles.iconBox}>
+              <Ionicons name="globe-outline" size={20} color={COLORS.primary} />
+            </View>
+            <View style={styles.actionTextWrap}>
+              <Text style={styles.actionTitle}>Visit Website</Text>
+              <Text style={styles.actionSub}>poconaturals.in</Text>
+            </View>
+            <Ionicons name="open-outline" size={18} color={COLORS.textMuted} />
+          </Pressable>
+        </View>
 
         {/* Store Connection Status */}
         <View style={styles.card}>
@@ -111,96 +245,6 @@ export default function AccountScreen() {
             </Pressable>
           </View>
         </View>
-
-        {/* Contact & Support */}
-        <Text style={styles.sectionTitleStandalone}>Contact POCO Naturals</Text>
-        <View style={styles.card}>
-          <Pressable
-            onPress={() =>
-              Linking.openURL(`https://wa.me/${STORE_INFO.whatsappNumber}`)
-            }
-            style={styles.actionRow}
-          >
-            <View style={[styles.iconBox, { backgroundColor: COLORS.primaryTint }]}>
-              <Ionicons name="logo-whatsapp" size={20} color={COLORS.primary} />
-            </View>
-            <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>WhatsApp Support</Text>
-              <Text style={styles.actionSub}>{STORE_INFO.phonePrimary}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable
-            onPress={() =>
-              Linking.openURL(`tel:${STORE_INFO.phonePrimary.replace(/\s+/g, '')}`)
-            }
-            style={styles.actionRow}
-          >
-            <View style={[styles.iconBox, { backgroundColor: COLORS.accentTint }]}>
-              <Ionicons name="call-outline" size={20} color={COLORS.accent} />
-            </View>
-            <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Call Us</Text>
-              <Text style={styles.actionSub}>
-                {STORE_INFO.phonePrimary} / {STORE_INFO.phoneSecondary}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable
-            onPress={() => Linking.openURL(`mailto:${STORE_INFO.email}`)}
-            style={styles.actionRow}
-          >
-            <View style={[styles.iconBox, { backgroundColor: COLORS.goldTint }]}>
-              <Ionicons name="mail-outline" size={20} color={COLORS.gold} />
-            </View>
-            <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Email</Text>
-              <Text style={styles.actionSub}>{STORE_INFO.email}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
-          </Pressable>
-
-          <View style={styles.divider} />
-
-          <Pressable
-            onPress={() => openUrl(STORE_INFO.baseUrl)}
-            style={styles.actionRow}
-          >
-            <View style={[styles.iconBox, { backgroundColor: COLORS.surfaceMuted }]}>
-              <Ionicons name="globe-outline" size={20} color={COLORS.text} />
-            </View>
-            <View style={styles.actionTextWrap}>
-              <Text style={styles.actionTitle}>Visit Website</Text>
-              <Text style={styles.actionSub}>poconaturals.in</Text>
-            </View>
-            <Ionicons name="open-outline" size={18} color={COLORS.textMuted} />
-          </Pressable>
-        </View>
-
-        {/* Heritage Card */}
-        <View style={styles.heritageCard}>
-          <Text style={styles.heritageEyebrow}>OUR ROOTS</Text>
-          <Text style={styles.heritageTitle}>
-            Born in Udumalaipettai, Tamil Nadu
-          </Text>
-          <Text style={styles.heritageBody}>
-            POCO Naturals brings Tamil Nadu’s agricultural heritage and
-            traditional food wisdom to modern kitchens — from cold-pressed
-            coconut oil and heirloom millets to pure palm jaggery (Karupatti)
-            and wild forest honey.
-          </Text>
-          <View style={styles.addressRow}>
-            <Ionicons name="location-outline" size={16} color={COLORS.primary} />
-            <Text style={styles.addressText}>{STORE_INFO.address}</Text>
-          </View>
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -239,7 +283,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.text,
     paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.sm,
+    marginTop: SPACING.xs,
   },
   savedScroll: {
     paddingHorizontal: SPACING.lg,
@@ -301,7 +345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: COLORS.primaryTint,
+    backgroundColor: COLORS.surfaceMuted,
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderRadius: RADIUS.pill,
@@ -321,6 +365,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: RADIUS.md,
+    backgroundColor: COLORS.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -341,41 +386,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: COLORS.border,
     marginVertical: 4,
-  },
-  heritageCard: {
-    marginHorizontal: SPACING.lg,
-    marginTop: SPACING.xs,
-    backgroundColor: COLORS.primaryTint,
-    borderRadius: RADIUS.xl,
-    padding: SPACING.lg,
-    gap: SPACING.sm,
-  },
-  heritageEyebrow: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: COLORS.accent,
-    letterSpacing: 1.2,
-  },
-  heritageTitle: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: COLORS.primary,
-  },
-  heritageBody: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
-    lineHeight: 20,
-  },
-  addressRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 6,
-    marginTop: 4,
-  },
-  addressText: {
-    flex: 1,
-    fontSize: 12,
-    color: COLORS.text,
-    lineHeight: 18,
   },
 });

@@ -13,15 +13,6 @@ const CATEGORY_ICON_MAP: Record<string, keyof typeof Ionicons.glyphMap> = {
   'traditional-breakfast-mixes': 'cafe-outline',
 };
 
-const CATEGORY_TINT_MAP: Record<string, string> = {
-  'coconut-products': '#E9F2EC',
-  honey: '#FDF5E6',
-  milletproducts: '#F9EDE5',
-  'palm-products': '#F3ECE4',
-  'premium-millets': '#EEF4EA',
-  'traditional-breakfast-mixes': '#FBF0E4',
-};
-
 interface CategoryTileProps {
   slug: string;
   name: string;
@@ -31,14 +22,13 @@ interface CategoryTileProps {
 
 export function CategoryTile({ slug, name, count, onPress }: CategoryTileProps) {
   const icon = CATEGORY_ICON_MAP[slug] ?? 'leaf-outline';
-  const tint = CATEGORY_TINT_MAP[slug] ?? COLORS.primaryTint;
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.tile, pressed && styles.tilePressed]}
     >
-      <View style={[styles.iconCircle, { backgroundColor: tint }]}>
+      <View style={styles.iconCircle}>
         <Ionicons name={icon} size={22} color={COLORS.primary} />
       </View>
       <Text style={styles.name} numberOfLines={2}>
@@ -72,6 +62,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surfaceMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },

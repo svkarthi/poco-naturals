@@ -73,7 +73,7 @@ export default function ShopScreen() {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Shop POCO Naturals</Text>
+        <Text style={styles.title}>Products</Text>
         <Text style={styles.countText}>
           {filteredProducts.length}{' '}
           {filteredProducts.length === 1 ? 'product' : 'products'}

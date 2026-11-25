@@ -9,6 +9,13 @@ import { COLORS } from '@/theme/tokens';
 export default function TabsLayout() {
   const { cartCount } = useStore();
 
+  const iconColor = (color: unknown, focused: boolean) =>
+    typeof color === 'string'
+      ? color
+      : focused
+      ? COLORS.primary
+      : COLORS.textMuted;
+
   return (
     <Tabs
       screenOptions={{
@@ -35,9 +42,9 @@ export default function TabsLayout() {
           title: 'Home',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'leaf' : 'leaf-outline'}
+              name={focused ? 'home' : 'home-outline'}
               size={22}
-              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
+              color={iconColor(color, focused)}
             />
           ),
         }}
@@ -45,12 +52,25 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="shop"
         options={{
-          title: 'Shop',
+          title: 'Products',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? 'grid' : 'grid-outline'}
               size={22}
-              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
+              color={iconColor(color, focused)}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="blog"
+        options={{
+          title: 'Blog',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? 'newspaper' : 'newspaper-outline'}
+              size={22}
+              color={iconColor(color, focused)}
             />
           ),
         }}
@@ -64,7 +84,7 @@ export default function TabsLayout() {
               <Ionicons
                 name={focused ? 'bag-handle' : 'bag-handle-outline'}
                 size={22}
-                color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
+                color={iconColor(color, focused)}
               />
               {cartCount > 0 && (
                 <View style={styles.badge}>
@@ -83,9 +103,9 @@ export default function TabsLayout() {
           title: 'More',
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
-              name={focused ? 'person-circle' : 'person-circle-outline'}
-              size={24}
-              color={typeof color === 'string' ? color : focused ? COLORS.primary : COLORS.textMuted}
+              name={focused ? 'menu' : 'menu-outline'}
+              size={23}
+              color={iconColor(color, focused)}
             />
           ),
         }}
@@ -102,7 +122,7 @@ const styles = StyleSheet.create({
     minWidth: 18,
     height: 18,
     borderRadius: 9,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primaryDark,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 4,
