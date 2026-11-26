@@ -32,7 +32,7 @@ npx expo start --port 8082
 
 ## CI/CD — Android APK & Play Store AAB (GitHub Actions)
 
-`.github/workflows/android-apk.yml` runs on every push to `main`, `v*` tags, and manual `workflow_dispatch` (with `concurrency` cancellation on superseded branch builds):
+`.github/workflows/android-apk.yml` runs on every `v*` tag push (e.g. `v1.0.0`) and manual `workflow_dispatch`:
 
 1. Runs `npm run lint`, `npm run typecheck`, and `npm test -- --ci`.
 2. Runs `npx expo prebuild --platform android --clean --no-install` and `./gradlew assembleRelease --no-daemon` (Java 21 + Gradle cache).
