@@ -3,6 +3,7 @@ const { withAndroidManifest } = require('expo/config-plugins');
 const UPI_AND_SUPPORT_SCHEMES = [
   'upi',
   'tez',
+  'gpay',
   'phonepe',
   'paytmmp',
   'bhim',

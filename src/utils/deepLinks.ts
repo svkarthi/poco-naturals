@@ -1,6 +1,7 @@
 const EXTERNAL_SCHEMES = new Set([
   'upi:',
   'tez:',
+  'gpay:',
   'phonepe:',
   'paytmmp:',
   'bhim:',

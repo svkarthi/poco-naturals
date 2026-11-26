@@ -29,11 +29,19 @@ type ShouldStartRequest = Parameters<
   NonNullable<WebViewProps['onShouldStartLoadWithRequest']>
 >[0];
 
+// Standard mobile browser User-Agent (without Android "; wv)" token) so hosted
+// payment gateways like PayGlocal / Razorpay display GPay, PhonePe & UPI intent options.
+const CHECKOUT_USER_AGENT =
+  Platform.OS === 'android'
+    ? 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Mobile Safari/537.36'
+    : 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1';
+
 export default function CheckoutScreen() {
   const router = useRouter();
   const { cartItems, subtotal, clearCart } = useCart();
   const [hasSynced, setHasSynced] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [currentUrl, setCurrentUrl] = useState(`${STORE_INFO.baseUrl}/checkout/`);
 
   const [syncState, setSyncState] = useState<
     'syncing' | 'ready' | 'completed' | 'error'
@@ -163,6 +171,9 @@ export default function CheckoutScreen() {
   const handleNavigationChange = useCallback(
     (navState: WebViewNavigation) => {
       const url = navState.url || '';
+      if (url.startsWith('https://') || url.startsWith('http://')) {
+        setCurrentUrl(url);
+      }
       if (url.includes('/checkout/order-received/')) {
         setSyncState('completed');
         clearCart();
@@ -256,6 +267,19 @@ export default function CheckoutScreen() {
               <Ionicons name="close" size={24} color={COLORS.primary} />
             </Pressable>
           ),
+          headerRight: () => (
+            <Pressable
+              onPress={() =>
+                WebBrowser.openBrowserAsync(currentUrl).catch(() =>
+                  Linking.openURL(currentUrl)
+                )
+              }
+              hitSlop={8}
+              accessibilityLabel="Open checkout in browser"
+            >
+              <Ionicons name="open-outline" size={21} color={COLORS.primary} />
+            </Pressable>
+          ),
         }}
       />
 
@@ -277,8 +301,16 @@ export default function CheckoutScreen() {
       <WebView
         key={reloadKey}
         source={{ uri: `${STORE_INFO.baseUrl}/cart/` }}
+        userAgent={CHECKOUT_USER_AGENT}
         originWhitelist={['*']}
         onShouldStartLoadWithRequest={handleShouldStartLoad}
+        onOpenWindow={(event) => {
+          const targetUrl = event.nativeEvent?.targetUrl;
+          if (!targetUrl) return;
+          const res = resolveExternalCheckoutUrl(targetUrl);
+          const urlToOpen = res.shouldIntercept && res.targetUrl ? res.targetUrl : targetUrl;
+          Linking.openURL(urlToOpen).catch(() => {});
+        }}
         onLoadEnd={() => {
           if (hasSynced && syncState === 'syncing') {
             setSyncState('ready');
@@ -292,7 +324,6 @@ export default function CheckoutScreen() {
         thirdPartyCookiesEnabled
         javaScriptEnabled
         domStorageEnabled
-        setSupportMultipleWindows={false}
         startInLoadingState
         style={styles.webview}
       />

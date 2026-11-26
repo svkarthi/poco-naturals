@@ -16,6 +16,7 @@
         "LSApplicationQueriesSchemes": [
           "upi",
           "tez",
+          "gpay",
           "phonepe",
           "paytmmp",
           "bhim",
